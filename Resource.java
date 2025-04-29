@@ -6,11 +6,9 @@ class Resource {
     public Resource(int id) {
         this.id = id;
     }
-
     public int getId() {
         return id;
     }
-
     public boolean isAvailable() {
         return isAvailable;
     }
