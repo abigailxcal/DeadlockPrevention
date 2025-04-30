@@ -1,4 +1,4 @@
-# Deadlock Prevention Algorithm (Java Implementation)
+# Deadlock Prevention Algorithm 
 ## Role Summary
 This implementation handles deadlock prevention using the resource ordering strategy.
 It enforces a strict global ordering of resource acquisition to break the circular wait condition, one of the four necessary conditions for deadlock.
