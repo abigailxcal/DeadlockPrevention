@@ -8,25 +8,31 @@ class ResourceManager {
         this.resources.sort(Comparator.comparingInt(Resource::getId));
     }
 
-    public synchronized boolean requestResources(List<Resource> requestedResources) {       // requests are made in order
+    public synchronized boolean requestResources(List<Resource> requestedResources) {
         requestedResources.sort(Comparator.comparingInt(Resource::getId));
+        List<Resource> acquired = new ArrayList<>();
+    
         for (Resource r : requestedResources) {
             if (!r.isAvailable()) {
-                // if any resource isn't available, release anything already allocated by curr process 
-                releaseResources(requestedResources);
+                // release only already-acquired resources
+                releaseResources(acquired);
                 return false;
             }
-        }
-
-        for (Resource r : requestedResources) { //lock resources
             r.setAvailable(false);
+            r.setThread(Thread.currentThread().getName());
+            System.out.println("Resource " + r.getId() + " acquired by " + r.getThread());
+            acquired.add(r);
         }
+    
         return true;
     }
+    
 
     public synchronized void releaseResources(List<Resource> resourcesToRelease) {
         for (Resource r : resourcesToRelease) {
+            System.out.println("Resource  " + r.getId() + " has been released by " + r.getThread());
             r.setAvailable(true);
+            r.setThread(null);
         }
     }
 }
