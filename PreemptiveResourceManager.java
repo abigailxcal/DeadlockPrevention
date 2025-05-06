@@ -1,8 +1,8 @@
 import java.util.*;
 
 class PreemptiveResourceManager extends BaseResourceManager {
-    public PreemptiveResourceManager(List<Resource> resources) {
-        super(resources);
+    public PreemptiveResourceManager(List<Resource> resources, boolean verbose) {
+        super(resources, verbose);
     }
 
     @Override
@@ -12,15 +12,34 @@ class PreemptiveResourceManager extends BaseResourceManager {
 
         for (Resource r : requestedResources) {
             if (!r.isAvailable()) {
+
+                if (verbose) {
+                    System.out.print("    " + Thread.currentThread().getName() + " couldn't acquire resource "
+                            + r.getId() + ". ");
+                    if (!acquired.isEmpty()) {
+                        System.out.print("Releasing acquired resources [ ");
+                        for (Resource res : acquired) {
+                            System.out.print(res.getId() + " ");
+                        }
+                        System.out.print("]  ");
+                    }
+                    System.out.println("Retrying...");
+                }
                 releaseResources(acquired);
                 return false;
             }
             r.setAvailable(false);
             r.setThread(Thread.currentThread().getName());
             acquired.add(r);
-            //System.out.println("Resource " + r.getId() + " acquired by " + r.getThread());
-        }
 
+            if (verbose) {
+                System.out.println("    " + Thread.currentThread().getName() + " acquired resource " + r.getId());
+            }
+        }
+        if (verbose) {
+            System.out.println("    " + Thread.currentThread().getName() + " requests COMPLETED. Now executing task...");
+        }
+        printResourcesCurrentState();
         return true;
     }
 }

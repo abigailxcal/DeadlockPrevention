@@ -1,8 +1,8 @@
 import java.util.*;
 
 public class HoldAndWaitResourceManager extends BaseResourceManager {
-    public HoldAndWaitResourceManager(List<Resource> resources) {
-        super(resources);
+    public HoldAndWaitResourceManager(List<Resource> resources, boolean verbose) {
+        super(resources, verbose);
     }
 
     @Override
@@ -11,16 +11,28 @@ public class HoldAndWaitResourceManager extends BaseResourceManager {
 
         for (Resource r : requestedResources) {
             if (!r.isAvailable()) {
+
+                if (verbose) {
+                    System.out.println(
+                            "    " + Thread.currentThread().getName() + " couldn't acquire resource " + r.getId());
+                }
                 return false;
             }
         }
-
         for (Resource r : requestedResources) {
             r.setAvailable(false);
             r.setThread(Thread.currentThread().getName());
-            //System.out.println("Resource " + r.getId() + " acquired by " + r.getThread());
+
+            if (verbose) {
+                System.out.println("    " + Thread.currentThread().getName() + " acquired resource " + r.getId());
+            }
         }
 
+        if (verbose) {
+            System.out
+                    .println("    " + Thread.currentThread().getName() + " requests COMPLETED. Now executing task...");
+        }
+        printResourcesCurrentState();
         return true;
     }
 }

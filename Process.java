@@ -8,13 +8,17 @@ class Process implements Runnable {
     public Process(BaseResourceManager manager, List<Resource> neededResources) {
         this.manager = manager;
         this.neededResources = neededResources;
+
     }
 
     @Override
     public void run() {
         String threadName = Thread.currentThread().getName();
         long startTime = System.currentTimeMillis();
-
+        if (this.manager.verbose) {
+            System.out.println(threadName+" attempting to acquire resources " + neededResources.stream().map(r -> "" + r.getId()).toList() );
+        }
+        
         while (!manager.requestResources(neededResources)) {
             retryCount++;
             try {
@@ -32,7 +36,8 @@ class Process implements Runnable {
             Thread.currentThread().interrupt();
         }
 
-        manager.releaseResources(neededResources);
+        manager.releaseResourcesAfterExecution(neededResources);
+        //manager.releaseResources(neededResources);
         long elapsed = System.currentTimeMillis() - startTime;
         // System.out.println(threadName + " released resources " + neededResources.stream().map(r -> "" + r.getId()).toList() +
         //        " | Retries: " + retryCount + " | Time: " + elapsed + "ms");
