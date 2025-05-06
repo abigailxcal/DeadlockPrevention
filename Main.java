@@ -23,6 +23,8 @@ public class Main {
         Thread t2 = new Thread(p2);
         Thread t3 = new Thread(p3);
         Thread t4 = new Thread(p4);
+
+        System.out.println("    ======== REQUESTS ========");
         t1.start();
         t2.start();
         t3.start();

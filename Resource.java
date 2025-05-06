@@ -3,6 +3,7 @@ class Resource {
     private final int id;
     private boolean isAvailable = true;
     private String thread;
+    private String owner = "";
 
     public Resource(int id) {
         this.id = id;
@@ -15,6 +16,16 @@ class Resource {
     public String getThread(){
         return thread;
     }
+    
+
+    public void setOwner(String owner) {
+        this.owner = owner;
+    }
+
+    public String getOwner() {
+        return owner;
+    }   
+
 
     public void setThread(String thread){
         this.thread = thread;
@@ -27,4 +38,5 @@ class Resource {
     public void setAvailable(boolean available) {
         isAvailable = available;
     }
+    
 }

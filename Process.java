@@ -12,23 +12,29 @@ class Process implements Runnable {
 
     @Override
     public void run() {
-        System.out.println(Thread.currentThread().getName() + " attempting to request resources.");
+        System.out.println(Thread.currentThread().getName() + " attempting to request resources: " + neededResources.iterator().next().getId() + " " + neededResources.get(1).getId());
         while (!manager.requestResources(neededResources)) {
-            System.out.println(Thread.currentThread().getName() + " couldn't get all resources. Retrying...");
             try {
                 Thread.sleep(100); // wait a bit and try again
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
         }
-        System.out.println(Thread.currentThread().getName() + " acquired all resources!");
         try {
             Thread.sleep(500); // simulate doing some work
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
-        manager.releaseResources(neededResources);
-        System.out.println(Thread.currentThread().getName() + " released resources.");
+        manager.releaseResourcesAfterExecution(neededResources);
+        
+    }
+
+    public void printResourceRequests() {
+        System.out.print(Thread.currentThread().getName() + " (p) requested resources: ");
+        for (Resource r : neededResources) {
+            System.out.print(r.getId() + " ");
+        }
+        System.out.println();
     }
 }
 
