@@ -7,51 +7,61 @@ public class Main {
 
     public static void main(String[] args) {
         int testRuns = 10;
+        int numThreads = 6;
+        int numResources = 6;
         long circularTotal = 0;
         long holdTotal = 0;
         long preemptTotal = 0;
-
+    
         for (int i = 1; i <= testRuns; i++) {
             System.out.println("===== TEST RUN " + i + " =====");
+    
+            // Generate one consistent set of resource pairs per test run
+            List<List<Integer>> resourcePairs = generateRandomResourcePairs(numThreads, numResources);
+            
+            System.out.println("Assigned resource pairs:");
+            for (int j = 0; j < resourcePairs.size(); j++) {
+                List<Integer> pair = resourcePairs.get(j);
+                System.out.printf("  P%d -> [%d, %d]%n", j + 1, pair.get(0), pair.get(1));
+            }
+            System.out.println();
 
-            List<Resource> resources1 = createResources();
-            circularTotal += runTestWithManager(new CircularWaitResourceManager(resources1), "Circular Wait");
-            
-            List<Resource> resources2 = createResources();
-            holdTotal += runTestWithManager(new HoldAndWaitResourceManager(resources2), "Hold and Wait");
-            
-            List<Resource> resources3 = createResources();
-            preemptTotal += runTestWithManager(new PreemptiveResourceManager(resources3), "Preemption");
+            circularTotal += runTestWithManager(new CircularWaitResourceManager(createResources()), "Circular Wait", resourcePairs);
+            holdTotal += runTestWithManager(new HoldAndWaitResourceManager(createResources()), "Hold and Wait", resourcePairs);
+            preemptTotal += runTestWithManager(new PreemptiveResourceManager(createResources()), "Preemption", resourcePairs);
         }
-
+    
         System.out.println("===== AVERAGE TIMES OVER " + testRuns + " RUNS =====");
         System.out.println("Circular Wait Average Time: " + (circularTotal / testRuns) + "ms");
         System.out.println("Hold and Wait Average Time: " + (holdTotal / testRuns) + "ms");
         System.out.println("Preemption Average Time: " + (preemptTotal / testRuns) + "ms");
-            }
+    }
 
     private static List<Resource> createResources() {
-        return Arrays.asList(new Resource(1), new Resource(2), new Resource(3), new Resource(4));
+        return Arrays.asList(new Resource(1), new Resource(2), new Resource(3), new Resource(4), new Resource(5), new Resource(6));
     }
 
-    private static List<Resource> getRandomResourcePair(BaseResourceManager manager) {
-        List<Resource> all = new ArrayList<>(List.of(
-            manager.getResourceById(1),
-            manager.getResourceById(2),
-            manager.getResourceById(3),
-            manager.getResourceById(4)
-        ));
-        Collections.shuffle(all);
-        return all.subList(0, 2);
+    private static List<List<Integer>> generateRandomResourcePairs(int numThreads, int numResources) {
+        List<List<Integer>> pairs = new ArrayList<>();
+        for (int i = 0; i < numThreads; i++) {
+            List<Integer> ids = new ArrayList<>();
+            for (int j = 1; j <= numResources; j++) ids.add(j);
+            Collections.shuffle(ids);
+            pairs.add(List.of(ids.get(0), ids.get(1)));
+        }
+        return pairs;
     }
-
-    private static long runTestWithManager(BaseResourceManager manager, String strategyName) {
+    private static long runTestWithManager(BaseResourceManager manager, String strategyName, List<List<Integer>> resourcePairs) {
         System.out.println("=== Strategy: " + strategyName + " ===");
     
         List<Thread> threads = new ArrayList<>();
-        for (int i = 1; i <= 4; i++) {
-            List<Resource> randomPair = getRandomResourcePair(manager);
-            threads.add(new Thread(new Process(manager, new ArrayList<>(randomPair)), "P" + i));
+    
+        for (int i = 0; i < resourcePairs.size(); i++) {
+            List<Integer> pair = resourcePairs.get(i);
+            Resource r1 = manager.getResourceById(pair.get(0));
+            Resource r2 = manager.getResourceById(pair.get(1));
+    
+            threads.add(new Thread(new Process(manager, new ArrayList<>(List.of(r1, r2))), "P" + (i + 1)));
         }
     
         long start = System.currentTimeMillis();
@@ -69,5 +79,6 @@ public class Main {
         System.out.println("All processes completed. Total time: " + totalTime + "ms\n");
         return totalTime;
     }
+    
     
 }
