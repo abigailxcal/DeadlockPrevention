@@ -19,16 +19,16 @@ public class Main {
 
             switch (input) {
                 case "1":
-                    runSingleStrategy("Circular Wait", new CircularWaitResourceManager(createResources(),true));
+                    runSingleStrategy("Circular Wait", new CircularWaitResourceManager(createResources(), true), generateRandomResourcePairs(6, 6));
                     break;
                 case "2":
-                    runSingleStrategy("Hold and Wait", new HoldAndWaitResourceManager(createResources(),true));
+                    runSingleStrategy("Hold and Wait", new HoldAndWaitResourceManager(createResources(), true), generateRandomResourcePairs(6, 6));
                     break;
                 case "3":
-                    runSingleStrategy("Preemption", new PreemptiveResourceManager(createResources(),true));
+                    runSingleStrategy("Preemption", new PreemptiveResourceManager(createResources(), true), generateRandomResourcePairs(6, 6));
                     break;
                 case "4":
-                    runAllStrategies(10); 
+                    runAllStrategies(10, 6, 6);
                     break;
                 case "5":
                     System.out.println("Exiting. Goodbye.");
@@ -42,21 +42,35 @@ public class Main {
         scanner.close();
     }
 
-    private static void runSingleStrategy(String name, BaseResourceManager manager) {
-        runTestWithManager(manager, name, true);
+    private static void runSingleStrategy(String name, BaseResourceManager manager, List<List<Integer>> resourcePairs) {
+        System.out.println("Assigned resource pairs:");
+        for (int j = 0; j < resourcePairs.size(); j++) {
+            List<Integer> pair = resourcePairs.get(j);
+            System.out.printf("  P%d -> [%d, %d]%n", j + 1, pair.get(0), pair.get(1));
+        }
+        System.out.println();
+        runTestWithManager(manager, name, resourcePairs);
     }
 
-    private static void runAllStrategies(int testRuns) {
+    private static void runAllStrategies(int testRuns, int numThreads, int numResources) {
         long circularTotal = 0;
         long holdTotal = 0;
         long preemptTotal = 0;
 
         for (int i = 1; i <= testRuns; i++) {
-            System.out.println("\n===== TEST RUN " + i + " =====");
+            System.out.println("===== TEST RUN " + i + " =====");
+            List<List<Integer>> resourcePairs = generateRandomResourcePairs(numThreads, numResources);
 
-            circularTotal += runTestWithManager(new CircularWaitResourceManager(createResources(),false), "Circular Wait",false);
-            holdTotal += runTestWithManager(new HoldAndWaitResourceManager(createResources(),false), "Hold and Wait",false);
-            preemptTotal += runTestWithManager(new PreemptiveResourceManager(createResources(),false), "Preemption",false);
+            System.out.println("Assigned resource pairs:");
+            for (int j = 0; j < resourcePairs.size(); j++) {
+                List<Integer> pair = resourcePairs.get(j);
+                System.out.printf("  P%d -> [%d, %d]%n", j + 1, pair.get(0), pair.get(1));
+            }
+            System.out.println();
+
+            circularTotal += runTestWithManager(new CircularWaitResourceManager(createResources(), false), "Circular Wait", resourcePairs);
+            holdTotal += runTestWithManager(new HoldAndWaitResourceManager(createResources(), false), "Hold and Wait", resourcePairs);
+            preemptTotal += runTestWithManager(new PreemptiveResourceManager(createResources(), false), "Preemption", resourcePairs);
         }
 
         System.out.println("===== AVERAGE TIMES OVER " + testRuns + " RUNS =====");
@@ -66,27 +80,33 @@ public class Main {
     }
 
     private static List<Resource> createResources() {
-        return Arrays.asList(new Resource(1), new Resource(2), new Resource(3), new Resource(4));
+        return Arrays.asList(
+            new Resource(1), new Resource(2), new Resource(3),
+            new Resource(4), new Resource(5), new Resource(6));
     }
 
-    private static List<Resource> getRandomResourcePair(BaseResourceManager manager) {
-        List<Resource> all = new ArrayList<>(List.of(
-            manager.getResourceById(1),
-            manager.getResourceById(2),
-            manager.getResourceById(3),
-            manager.getResourceById(4)
-        ));
-        Collections.shuffle(all);
-        return all.subList(0, 2);
+    private static List<List<Integer>> generateRandomResourcePairs(int numThreads, int numResources) {
+        List<List<Integer>> pairs = new ArrayList<>();
+        for (int i = 0; i < numThreads; i++) {
+            List<Integer> ids = new ArrayList<>();
+            for (int j = 1; j <= numResources; j++) ids.add(j);
+            Collections.shuffle(ids);
+            pairs.add(List.of(ids.get(0), ids.get(1)));
+        }
+        return pairs;
     }
 
-    private static long runTestWithManager(BaseResourceManager manager, String strategyName, boolean verbose) {
+    private static long runTestWithManager(BaseResourceManager manager, String strategyName, List<List<Integer>> resourcePairs) {
         System.out.println("=== Strategy: " + strategyName + " ===");
 
         List<Thread> threads = new ArrayList<>();
-        for (int i = 1; i <= 4; i++) {
-            List<Resource> randomPair = getRandomResourcePair(manager);
-            threads.add(new Thread(new Process(manager, new ArrayList<>(randomPair)), "P" + i));
+
+        for (int i = 0; i < resourcePairs.size(); i++) {
+            List<Integer> pair = resourcePairs.get(i);
+            Resource r1 = manager.getResourceById(pair.get(0));
+            Resource r2 = manager.getResourceById(pair.get(1));
+
+            threads.add(new Thread(new Process(manager, new ArrayList<>(List.of(r1, r2))), "P" + (i + 1)));
         }
 
         long start = System.currentTimeMillis();
