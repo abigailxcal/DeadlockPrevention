@@ -11,7 +11,7 @@ public class Main {
             System.out.println("1. Run Circular Wait Prevention");
             System.out.println("2. Run Hold and Wait Prevention");
             System.out.println("3. Run Preemption Strategy");
-            System.out.println("4. Run test cycle for ALL strategies (10 runs each)");
+            System.out.println("4. Run test cycle for ALL strategies");
             System.out.println("5. Exit");
             System.out.print("Choose an option: ");
 
@@ -28,7 +28,28 @@ public class Main {
                     runSingleStrategy("Preemption", new PreemptiveResourceManager(createResources(), true), generateRandomResourcePairs(6, 6));
                     break;
                 case "4":
-                    runAllStrategies(10, 6, 6);
+                    int runs = 10;
+                    int resources = 6;
+                    int processes = 6;
+                
+                    try {
+                        System.out.print("How many test runs would you like to do? ");
+                        runs = Integer.parseInt(scanner.nextLine().trim());
+                
+                        System.out.print("How many resources should each strategy have? (max 6)");
+                        resources = Integer.parseInt(scanner.nextLine().trim());
+                
+                        System.out.print("How many processes (threads) should be created? ");
+                        processes = Integer.parseInt(scanner.nextLine().trim());
+
+                    } catch (NumberFormatException e) {
+                        System.out.println("Invalid input detected. Defaulting to 10 test runs, 6 resources, and 6 processes.");
+                        runs = 10;
+                        resources = 6;
+                        processes = 6;
+                    }
+                
+                    runAllStrategies(runs, processes, resources);
                     break;
                 case "5":
                     System.out.println("Exiting. Goodbye.");
@@ -73,10 +94,14 @@ public class Main {
             preemptTotal += runTestWithManager(new PreemptiveResourceManager(createResources(), false), "Preemption", resourcePairs);
         }
 
-        System.out.println("===== AVERAGE TIMES OVER " + testRuns + " RUNS =====");
-        System.out.println("Circular Wait Average Time: " + (circularTotal / testRuns) + "ms");
-        System.out.println("Hold and Wait Average Time: " + (holdTotal / testRuns) + "ms");
-        System.out.println("Preemption Average Time: " + (preemptTotal / testRuns) + "ms\n");
+        System.out.println("===== AVERAGE COMPLETION TIMES =====");
+        System.out.println("Test Runs   : " + testRuns);
+        System.out.println("Threads     : " + numThreads);
+        System.out.println("Resources   : " + numResources);
+        System.out.println("------------------------------------");
+        System.out.println("Circular Wait : " + (circularTotal / testRuns) + " ms");
+        System.out.println("Hold and Wait : " + (holdTotal / testRuns) + " ms");
+        System.out.println("Preemption    : " + (preemptTotal / testRuns) + " ms\n");
     }
 
     private static List<Resource> createResources() {
