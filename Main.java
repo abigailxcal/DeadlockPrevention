@@ -1,44 +1,73 @@
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 public class Main {
 
-// TODO: specify which resources are being requested by a particular process 
-
-    
     public static void main(String[] args) {
-        Resource r1 = new Resource(1);
-        Resource r2 = new Resource(2);
-        Resource r3 = new Resource(3);
-        Resource r4 = new Resource(4);
-        List<Resource> allResources = Arrays.asList(r1, r2, r3, r4);
-        ResourceManager manager = new ResourceManager(allResources);
+        int testRuns = 10;
+        long circularTotal = 0;
+        long holdTotal = 0;
+        long preemptTotal = 0;
 
-        // processes that intentionally overlap
-        Process p1 = new Process(manager, Arrays.asList(r1, r3));
-        Process p2 = new Process(manager, Arrays.asList(r2, r4));
-        Process p3 = new Process(manager, Arrays.asList(r1, r2));
-        Process p4 = new Process(manager, Arrays.asList(r3, r4));
-        Thread t1 = new Thread(p1);
-        Thread t2 = new Thread(p2);
-        Thread t3 = new Thread(p3);
-        Thread t4 = new Thread(p4);
-        t1.start();
-        t2.start();
-        t3.start();
-        t4.start();
+        for (int i = 1; i <= testRuns; i++) {
+            System.out.println("===== TEST RUN " + i + " =====");
 
-        // wait for all threads to finish
-        try {
-            t1.join();
-            t2.join();
-            t3.join();
-            t4.join();
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
+            List<Resource> resources1 = createResources();
+            circularTotal += runTestWithManager(new CircularWaitResourceManager(resources1), "Circular Wait");
+            
+            List<Resource> resources2 = createResources();
+            holdTotal += runTestWithManager(new HoldAndWaitResourceManager(resources2), "Hold and Wait");
+            
+            List<Resource> resources3 = createResources();
+            preemptTotal += runTestWithManager(new PreemptiveResourceManager(resources3), "Preemption");
         }
-        System.out.println("\nAll processes completed without deadlock.");
+
+        System.out.println("===== AVERAGE TIMES OVER " + testRuns + " RUNS =====");
+        System.out.println("Circular Wait Average Time: " + (circularTotal / testRuns) + "ms");
+        System.out.println("Hold and Wait Average Time: " + (holdTotal / testRuns) + "ms");
+        System.out.println("Preemption Average Time: " + (preemptTotal / testRuns) + "ms");
+            }
+
+    private static List<Resource> createResources() {
+        return Arrays.asList(new Resource(1), new Resource(2), new Resource(3), new Resource(4));
     }
 
+    private static List<Resource> getRandomResourcePair(BaseResourceManager manager) {
+        List<Resource> all = new ArrayList<>(List.of(
+            manager.getResourceById(1),
+            manager.getResourceById(2),
+            manager.getResourceById(3),
+            manager.getResourceById(4)
+        ));
+        Collections.shuffle(all);
+        return all.subList(0, 2);
+    }
+
+    private static long runTestWithManager(BaseResourceManager manager, String strategyName) {
+        System.out.println("=== Strategy: " + strategyName + " ===");
+    
+        List<Thread> threads = new ArrayList<>();
+        for (int i = 1; i <= 4; i++) {
+            List<Resource> randomPair = getRandomResourcePair(manager);
+            threads.add(new Thread(new Process(manager, new ArrayList<>(randomPair)), "P" + i));
+        }
+    
+        long start = System.currentTimeMillis();
+    
+        for (Thread t : threads) t.start();
+        for (Thread t : threads) {
+            try {
+                t.join();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+    
+        long totalTime = System.currentTimeMillis() - start;
+        System.out.println("All processes completed. Total time: " + totalTime + "ms\n");
+        return totalTime;
+    }
     
 }

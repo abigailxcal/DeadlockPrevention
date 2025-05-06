@@ -1,34 +1,40 @@
 import java.util.List;
 
-
 class Process implements Runnable {
-    private final ResourceManager manager;
+    private final BaseResourceManager manager;
     private final List<Resource> neededResources;
+    private int retryCount = 0;
 
-    public Process(ResourceManager manager, List<Resource> neededResources) {
+    public Process(BaseResourceManager manager, List<Resource> neededResources) {
         this.manager = manager;
         this.neededResources = neededResources;
     }
 
     @Override
     public void run() {
-        System.out.println(Thread.currentThread().getName() + " attempting to request resources.");
+        String threadName = Thread.currentThread().getName();
+        long startTime = System.currentTimeMillis();
+
         while (!manager.requestResources(neededResources)) {
-            System.out.println(Thread.currentThread().getName() + " couldn't get all resources. Retrying...");
+            retryCount++;
             try {
-                Thread.sleep(100); // wait a bit and try again
+                Thread.sleep(100);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
         }
-        System.out.println(Thread.currentThread().getName() + " acquired all resources!");
+
+        // System.out.println(threadName + " acquired resources " + neededResources.stream().map(r -> "" + r.getId()).toList());
+
         try {
-            Thread.sleep(500); // simulate doing some work
+            Thread.sleep(500); // simulate work
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
+
         manager.releaseResources(neededResources);
-        System.out.println(Thread.currentThread().getName() + " released resources.");
+        long elapsed = System.currentTimeMillis() - startTime;
+        // System.out.println(threadName + " released resources " + neededResources.stream().map(r -> "" + r.getId()).toList() +
+        //        " | Retries: " + retryCount + " | Time: " + elapsed + "ms");
     }
 }
-
