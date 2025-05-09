@@ -19,13 +19,13 @@ public class Main {
 
             switch (input) {
                 case "1":
-                    runSingleStrategy("Circular Wait", new CircularWaitResourceManager(createResources(), true), generateRandomResourcePairs(6, 6));
+                    runSingleStrategy("Circular Wait", new CircularWaitResourceManager(createResources(), true), generateRandomResourcePairs(4, 3));
                     break;
                 case "2":
-                    runSingleStrategy("Hold and Wait", new HoldAndWaitResourceManager(createResources(), true), generateRandomResourcePairs(6, 6));
+                    runSingleStrategy("Hold and Wait", new HoldAndWaitResourceManager(createResources(), true), generateRandomResourcePairs(4, 3));
                     break;
                 case "3":
-                    runSingleStrategy("Preemption", new PreemptiveResourceManager(createResources(), true), generateRandomResourcePairs(6, 6));
+                    runSingleStrategy("Preemption", new PreemptiveResourceManager(createResources(), true), generateRandomResourcePairs(4, 3));
                     break;
                 case "4":
                     int runs = 10;
@@ -123,19 +123,30 @@ public class Main {
 
     private static long runTestWithManager(BaseResourceManager manager, String strategyName, List<List<Integer>> resourcePairs) {
         System.out.println("=== Strategy: " + strategyName + " ===");
-
+    
         List<Thread> threads = new ArrayList<>();
-
+        Random rand = new Random();
+    
         for (int i = 0; i < resourcePairs.size(); i++) {
             List<Integer> pair = resourcePairs.get(i);
             Resource r1 = manager.getResourceById(pair.get(0));
             Resource r2 = manager.getResourceById(pair.get(1));
-
-            threads.add(new Thread(new Process(manager, new ArrayList<>(List.of(r1, r2))), "P" + (i + 1)));
+    
+            String threadName = "P" + (i + 1);
+            Thread thread = new Thread(new Process(manager, new ArrayList<>(List.of(r1, r2))), threadName);
+    
+            int priority = rand.nextInt(10) + 1;
+            PriorityManager.assignPriority(threadName, priority);
+    
+            if (manager.verbose) {
+                System.out.println("Assigned priority " + priority + " to " + threadName);
+            }
+    
+            threads.add(thread);
         }
-
+    
         long start = System.currentTimeMillis();
-
+    
         for (Thread t : threads) t.start();
         for (Thread t : threads) {
             try {
@@ -144,9 +155,10 @@ public class Main {
                 Thread.currentThread().interrupt();
             }
         }
-
+    
         long totalTime = System.currentTimeMillis() - start;
         System.out.println("All processes completed. Total time: " + totalTime + "ms\n");
         return totalTime;
     }
+    
 }
